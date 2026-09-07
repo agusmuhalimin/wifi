@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Sistem Manajemen ISP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        skyBlue: '#0284c7',
+                        skyLight: '#e0f2fe',
+                        rgbAccent: '#06b6d4',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes rgbGlow {
+            0% { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+            50% { border-color: #06b6d4; box-shadow: 0 0 25px rgba(6, 182, 212, 0.6); }
+            100% { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        }
+        .rgb-card {
+            animation: rgbGlow 6s infinite ease-in-out;
+            transition: all 0.3s ease;
+        }
+        .rgb-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.5);
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        button, .nav-btn, .mobile-nav-btn, label[class*="cursor-pointer"] {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover, label[class*="cursor-pointer"]:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+        button:active, label[class*="cursor-pointer"]:active {
+            transform: scale(0.95) translateY(1px);
+            filter: brightness(0.92);
+            box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2) !important;
+        }
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: rippleEffect 0.5s linear;
+            pointer-events: none;
+        }
+        @keyframes rippleEffect {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-50 via-sky-100 to-blue-200 min-h-screen text-slate-800 font-sans pb-20 md:pb-0">
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white/95 backdrop-blur rounded-3xl shadow-2xl p-8 max-w-md w-full border border-sky-300 rgb-card">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-sky-500 rounded-2xl mx-auto flex items-center justify-center text-white text-3xl shadow-lg shadow-sky-500/30 mb-3">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900">Portal ISP Manager</h2>
+                <p class="text-sm text-slate-500 mt-1">Silakan masuk untuk mengakses sistem</p>
+                <div id="connection-status-login" class="mt-2 text-xs font-medium text-emerald-600 bg-emerald-50 py-1 px-3 rounded-full inline-block">
+                    <i class="fa-solid fa-circle-check mr-1"></i> Data & Persistence Siap
+                </div>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Pilih Peran</label>
+                    <select id="login-role" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                        <option value="admin">Administrator (Full Akses)</option>
+                        <option value="petugas">Petugas Lapangan / Kasir</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Username / ID</label>
+                    <input type="text" id="login-user" required placeholder="Masukkan username..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50" value="Admin Utama">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password</label>
+                    <input type="password" id="login-pass" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50" value="admin123">
+                </div>
+                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition duration-300">
+                    Masuk ke Sistem <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+            <div id="login-error" class="mt-4 text-center text-red-500 text-sm hidden"></div>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app-container" class="hidden flex flex-col md:flex-row h-screen overflow-hidden">
+        
+        <!-- Desktop Sidebar Navigation -->
+        <aside class="hidden md:flex w-72 bg-slate-900/90 backdrop-blur-md text-white flex-col border-r border-sky-500/30 shadow-2xl z-20">
+            <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-sky-500 to-cyan-400 rounded-xl flex items-center justify-center text-white text-xl shadow-md">
+                    <i class="fa-solid fa-wifi"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">ISP NET MANAGER</h1>
+                    <span id="user-badge" class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 font-medium"></span>
+                </div>
+            </div>
+            
+            <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie w-6"></i> <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('pelanggan')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium" data-tab="pelanggan">
+                    <i class="fa-solid fa-users w-6"></i> <span>Pelanggan</span>
+                </button>
+                <button onclick="switchTab('tagihan')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium" data-tab="tagihan">
+                    <i class="fa-solid fa-file-invoice-dollar w-6"></i> <span>Tagihan</span>
+                </button>
+                <button onclick="switchTab('keuangan')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium" data-tab="keuangan">
+                    <i class="fa-solid fa-wallet w-6"></i> <span>Keuangan</span>
+                </button>
+                <button onclick="switchTab('paket')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium" data-tab="paket">
+                    <i class="fa-solid fa-box-open w-6"></i> <span>Paket Layanan</span>
+                </button>
+                <button onclick="switchTab('profil')" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-sky-600/20 hover:text-sky-400 transition font-medium" data-tab="profil">
+                    <i class="fa-solid fa-building w-6"></i> <span>Profil Perusahaan</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800">
+                <button onclick="logout()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-medium">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span>Keluar Sistem</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden pb-16 md:pb-0">
+            <header class="h-16 md:h-20 bg-white/70 backdrop-blur-md border-b border-sky-200/50 flex items-center justify-between px-4 md:px-8 shadow-sm z-10">
+                <div class="flex items-center space-x-4">
+                    <h2 id="current-page-title" class="text-lg md:text-2xl font-black text-slate-800 tracking-tight">Dashboard Utama</h2>
+                </div>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <button onclick="loadAllData()" class="px-3 md:px-4 py-2 bg-sky-500/10 text-sky-600 rounded-xl hover:bg-sky-500/20 transition flex items-center space-x-2 text-xs md:text-sm font-semibold">
+                        <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                    <div class="flex items-center space-x-3 pl-2 md:pl-4 border-l border-slate-200">
+                        <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-sky-400 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm" id="user-avatar-initial">A</div>
+                        <div class="hidden sm:block">
+                            <p id="profile-name-display" class="text-sm font-bold text-slate-800">Administrator</p>
+                            <p id="profile-role-display" class="text-xs text-sky-600 font-medium capitalize">Admin System</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Tab Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+                <div id="loading-overlay" class="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-30 flex items-center justify-center hidden">
+                    <div class="flex flex-col items-center space-y-3">
+                        <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-sm font-bold text-sky-700 animate-pulse">Memuat Data & Sinkronisasi...</p>
+                    </div>
+                </div>
+
+                <!-- Dashboard Tab -->
+                <div id="tab-dashboard" class="tab-content space-y-6 fade-in">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        <div class="bg-white/80 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl rgb-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pelanggan</p>
+                                    <h3 id="stat-total-pelanggan" class="text-3xl font-black text-slate-800 mt-2">0</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-sky-500/10 text-sky-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-xs text-emerald-600 font-bold">
+                                <i class="fa-solid fa-arrow-trend-up mr-1"></i> <span>Aktif & Tersimpan Aman</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/80 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl rgb-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tagihan Lunas</p>
+                                    <h3 id="stat-tagihan-lunas" class="text-3xl font-black text-slate-800 mt-2">0</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                                    <i class="fa-solid fa-file-circle-check"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-xs text-emerald-600 font-bold">
+                                <i class="fa-solid fa-circle-check mr-1"></i> <span>Periode Berjalan</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/80 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl rgb-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tagihan Belum Bayar</p>
+                                    <h3 id="stat-tagihan-pending" class="text-3xl font-black text-slate-800 mt-2">0</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-xs text-amber-600 font-bold">
+                                <span id="stat-nominal-pending">Rp 0</span> <span class="ml-1 font-normal text-slate-500">Total Piutang</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/80 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl rgb-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Saldo Kas Bersih</p>
+                                    <h3 id="stat-saldo-kas" class="text-2xl font-black text-slate-800 mt-2">Rp 0</h3>
+                                </div>
+                                <div class="w-14 h-14 bg-cyan-500/10 text-cyan-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                                    <i class="fa-solid fa-wallet"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-xs text-cyan-600 font-bold">
+                                <i class="fa-solid fa-shield-halved mr-1"></i> <span>Database & Storage Sinkron</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-lg text-slate-800">Grafik Keuangan Bulanan (Masuk vs Keluar)</h3>
+                                <span class="text-xs px-3 py-1 bg-sky-100 text-sky-700 font-bold rounded-full">Animatif</span>
+                            </div>
+                            <div class="h-64 md:h-80 relative">
+                                <canvas id="financeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-lg text-slate-800">Distribusi Paket Layanan</h3>
+                            </div>
+                            <div class="h-64 md:h-80 relative flex items-center justify-center">
+                                <canvas id="packageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pelanggan Tab -->
+                <div id="tab-pelanggan" class="tab-content space-y-6 fade-in hidden">
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3 w-full md:w-auto">
+                            <div class="relative flex-1 md:w-80">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-search"></i></span>
+                                <input type="text" id="search-pelanggan" onkeyup="filterPelanggan()" placeholder="Cari nama, RT/RW, atau paket..." class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none text-sm bg-slate-50">
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                            <button onclick="exportExcelPelanggan()" class="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-excel"></i> <span>Export Excel</span>
+                            </button>
+                            <label class="px-4 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center space-x-2 cursor-pointer">
+                                <i class="fa-solid fa-file-arrow-up"></i> <span>Import Excel</span>
+                                <input type="file" id="import-excel-file" accept=".csv, .xlsx" onchange="importExcelPelanggan(event)" class="hidden">
+                            </label>
+                            <button onclick="openPelangganModal()" class="px-5 py-3 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-500/30 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-user-plus"></i> <span>Tambah Pelanggan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur rounded-3xl border border-sky-200 shadow-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-sky-500/10 border-b border-sky-200 text-xs font-bold uppercase text-sky-900 tracking-wider">
+                                        <th class="p-4">ID / Nama</th>
+                                        <th class="p-4">No WhatsApp</th>
+                                        <th class="p-4">Alamat / RT/RW</th>
+                                        <th class="p-4">Paket Layanan</th>
+                                        <th class="p-4">Status</th>
+                                        <th class="p-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-pelanggan-body" class="divide-y divide-sky-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tagihan Tab -->
+                <div id="tab-tagihan" class="tab-content space-y-6 fade-in hidden">
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3 w-full lg:w-auto">
+                            <div class="relative flex-1 lg:w-80">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-search"></i></span>
+                                <input type="text" id="search-tagihan" onkeyup="filterTagihan()" placeholder="Cari nama pelanggan / bulan..." class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none text-sm bg-slate-50">
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                            <div class="flex items-center space-x-2 bg-slate-50 border border-slate-300 px-3 py-2 rounded-xl">
+                                <i class="fa-solid fa-calendar-days text-sky-600"></i>
+                                <input type="date" id="calendar-generate-date" class="bg-transparent text-sm font-bold text-slate-700 focus:outline-none">
+                            </div>
+                            <button onclick="generateMassalTagihan()" class="px-5 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center space-x-2">
+                                <i class="fa-solid fa-calendar-check"></i> <span>Generate Tagihan Kalender</span>
+                            </button>
+                            <button onclick="openTagihanModal()" class="px-5 py-3 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-500/30 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-plus"></i> <span>Tambah Manual</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur rounded-3xl border border-sky-200 shadow-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-sky-500/10 border-b border-sky-200 text-xs font-bold uppercase text-sky-900 tracking-wider">
+                                        <th class="p-4">ID Tagihan / Pelanggan</th>
+                                        <th class="p-4">Periode / Tanggal</th>
+                                        <th class="p-4">Nominal</th>
+                                        <th class="p-4">Status Pembayaran</th>
+                                        <th class="p-4 text-center">Aksi & Integrasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-tagihan-body" class="divide-y divide-sky-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keuangan Tab -->
+                <div id="tab-keuangan" class="tab-content space-y-6 fade-in hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-emerald-500/10 backdrop-blur rounded-3xl p-6 border border-emerald-300 shadow-lg">
+                            <p class="text-xs font-bold uppercase text-emerald-700">Total Pemasukan</p>
+                            <h3 id="keuangan-total-masuk" class="text-3xl font-black text-emerald-800 mt-2">Rp 0</h3>
+                        </div>
+                        <div class="bg-red-500/10 backdrop-blur rounded-3xl p-6 border border-red-300 shadow-lg">
+                            <p class="text-xs font-bold uppercase text-red-700">Total Pengeluaran</p>
+                            <h3 id="keuangan-total-keluar" class="text-3xl font-black text-red-800 mt-2">Rp 0</h3>
+                        </div>
+                        <div class="bg-sky-500/10 backdrop-blur rounded-3xl p-6 border border-sky-300 shadow-lg">
+                            <p class="text-xs font-bold uppercase text-sky-700">Saldo Akhir Kas</p>
+                            <h3 id="keuangan-saldo-bersih" class="text-3xl font-black text-sky-800 mt-2">Rp 0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="font-bold text-lg text-slate-800">Riwayat Transaksi Keuangan</h3>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button onclick="printLaporanKeuangan()" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center space-x-2">
+                                <i class="fa-solid fa-print"></i> <span>Cetak Laporan</span>
+                            </button>
+                            <button onclick="openKeuanganModal()" class="px-5 py-3 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-500/30 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-plus-circle"></i> <span>Catat Transaksi</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur rounded-3xl border border-sky-200 shadow-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-sky-500/10 border-b border-sky-200 text-xs font-bold uppercase text-sky-900 tracking-wider">
+                                        <th class="p-4">Tanggal</th>
+                                        <th class="p-4">Keterangan</th>
+                                        <th class="p-4">Kategori</th>
+                                        <th class="p-4">Jenis</th>
+                                        <th class="p-4">Nominal</th>
+                                        <th class="p-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-keuangan-body" class="divide-y divide-sky-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paket Layanan Tab -->
+                <div id="tab-paket" class="tab-content space-y-6 fade-in hidden">
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl flex items-center justify-between">
+                        <h3 class="font-bold text-lg text-slate-800">Manajemen Paket Internet & Layanan</h3>
+                        <button onclick="openPaketModal()" class="px-5 py-3 bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-500/30 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-box"></i> <span>Tambah Paket Baru</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="paket-cards-container"></div>
+                </div>
+
+                <!-- Profil Perusahaan Tab -->
+                <div id="tab-profil" class="tab-content space-y-6 fade-in hidden">
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-8 border border-sky-200 shadow-xl max-w-4xl mx-auto space-y-8">
+                        <div class="border-b border-slate-200 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="text-xl font-black text-slate-800">Pengaturan Profil Perusahaan & Pembayaran</h3>
+                                <p class="text-sm text-slate-500">Kelola identitas ISP dan rekening bank / e-wallet resmi.</p>
+                            </div>
+                            <button onclick="saveProfilPerusahaan()" class="px-6 py-3 bg-gradient-to-r from-sky-600 to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition hover:scale-105">
+                                <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Perubahan
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Perusahaan / ISP</label>
+                                <input type="text" id="prof-nama" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nomor Telepon / CS</label>
+                                <input type="text" id="prof-telp" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Alamat Lengkap</label>
+                                <textarea id="prof-alamat" rows="3" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-200 pt-6">
+                            <h4 class="font-bold text-md text-slate-800 mb-4">Metode Pembayaran Bank & E-Wallet Aktif</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="BRI" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">Bank BRI</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="MANDIRI" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">Bank Mandiri</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="BNI" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">Bank BNI</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="Seabank" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">Seabank</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="DANA" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">DANA</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="OVO" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">OVO</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-4 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-sky-50 transition">
+                                    <input type="checkbox" name="metode-bayar" value="Gopay" class="w-5 h-5 text-sky-600 rounded">
+                                    <span class="font-bold text-slate-700">Gopay</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Navigation Bar (Visible only on mobile) -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-sky-500/30 shadow-2xl z-40 flex items-center justify-around py-2 px-1 text-slate-300">
+            <button onclick="switchTab('dashboard')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-sky-400" data-tab="dashboard">
+                <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Dash</span>
+            </button>
+            <button onclick="switchTab('pelanggan')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 hover:text-sky-400 transition" data-tab="pelanggan">
+                <i class="fa-solid fa-users text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Pelanggan</span>
+            </button>
+            <button onclick="switchTab('tagihan')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 hover:text-sky-400 transition" data-tab="tagihan">
+                <i class="fa-solid fa-file-invoice-dollar text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Tagihan</span>
+            </button>
+            <button onclick="switchTab('keuangan')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 hover:text-sky-400 transition" data-tab="keuangan">
+                <i class="fa-solid fa-wallet text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Kas</span>
+            </button>
+            <button onclick="switchTab('paket')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 hover:text-sky-400 transition" data-tab="paket">
+                <i class="fa-solid fa-box-open text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Paket</span>
+            </button>
+            <button onclick="switchTab('profil')" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 hover:text-sky-400 transition" data-tab="profil">
+                <i class="fa-solid fa-building text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium leading-none">Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Modals -->
+    <div id="pelanggan-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full border border-sky-300">
+            <h3 id="pelanggan-modal-title" class="text-xl font-black text-slate-900 mb-4">Tambah Pelanggan Baru</h3>
+            <form id="pelanggan-form" onsubmit="submitPelanggan(event)" class="space-y-4">
+                <input type="hidden" id="pel-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Lengkap</label>
+                    <input type="text" id="pel-nama" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nomor WhatsApp</label>
+                        <input type="text" id="pel-wa" required placeholder="08xxxxxxxxxx" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">RT / RW</label>
+                        <input type="text" id="pel-rtrw" required placeholder="001/005" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Alamat Lengkap</label>
+                    <textarea id="pel-alamat" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Paket Layanan</label>
+                        <select id="pel-paket" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status</label>
+                        <select id="pel-status" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Isolir">Isolir</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closePelangganModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 text-white font-bold hover:bg-sky-700 transition">Simpan Pelanggan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="tagihan-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-sky-300">
+            <h3 class="text-xl font-black text-slate-900 mb-4">Buat Tagihan Manual</h3>
+            <form id="tagihan-form" onsubmit="submitTagihan(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Pilih Pelanggan</label>
+                    <select id="tag-pelanggan" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Periode / Tanggal</label>
+                    <input type="text" id="tag-periode" required placeholder="Contoh: Oktober 2026" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="tag-nominal" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeTagihanModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 text-white font-bold hover:bg-sky-700 transition">Simpan Tagihan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="keuangan-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-sky-300">
+            <h3 class="text-xl font-black text-slate-900 mb-4">Catat Transaksi Keuangan</h3>
+            <form id="keuangan-form" onsubmit="submitKeuangan(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Jenis Transaksi</label>
+                    <select id="keu-jenis" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                        <option value="Pemasukan">Pemasukan</option>
+                        <option value="Pengeluaran">Pengeluaran</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Keterangan</label>
+                    <input type="text" id="keu-ket" required placeholder="Contoh: Pembayaran Langganan" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Kategori</label>
+                    <input type="text" id="keu-kat" required placeholder="Contoh: Langganan" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="keu-nom" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeKeuanganModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 text-white font-bold hover:bg-sky-700 transition">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="paket-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-sky-300">
+            <h3 class="text-xl font-black text-slate-900 mb-4">Manajemen Paket Layanan</h3>
+            <form id="paket-form" onsubmit="submitPaket(event)" class="space-y-4">
+                <input type="hidden" id="pkt-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Paket</label>
+                    <input type="text" id="pkt-nama" required placeholder="Contoh: 10 Mbps" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Kecepatan</label>
+                    <input type="text" id="pkt-kecepatan" required placeholder="Contoh: 10 Mbps" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Harga Bulanan (Rp)</label>
+                    <input type="number" id="pkt-harga" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closePaketModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition">Batal</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 text-white font-bold hover:bg-sky-700 transition">Simpan Paket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="receipt-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full border border-sky-300 space-y-6">
+            <div id="printable-receipt" class="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-slate-800">
+                <div class="text-center border-b border-dashed border-slate-300 pb-4">
+                    <h3 id="rcpt-isp-name" class="font-black text-xl text-sky-700">ISP NET MANAGER</h3>
+                    <p id="rcpt-isp-address" class="text-xs text-slate-500 mt-1">Jl. Telekomunikasi No. 1</p>
+                </div>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between"><span>No Tagihan:</span> <span id="rcpt-id" class="font-bold">#TAG-001</span></div>
+                    <div class="flex justify-between"><span>Tanggal Lunas:</span> <span id="rcpt-date" class="font-bold">02/09/2026</span></div>
+                    <div class="flex justify-between"><span>Nama Pelanggan:</span> <span id="rcpt-nama" class="font-bold">Budi Santoso</span></div>
+                    <div class="flex justify-between"><span>Periode:</span> <span id="rcpt-periode" class="font-bold">Oktober 2026</span></div>
+                </div>
+                <div class="border-t border-dashed border-slate-300 pt-3 flex justify-between font-black text-base text-slate-900">
+                    <span>Total Bayar:</span> <span id="rcpt-total" class="text-sky-600">Rp 150.000</span>
+                </div>
+                <div class="text-center pt-4 border-t border-dashed border-slate-300 text-xs text-slate-400">
+                    <p>Terima kasih atas pembayaran internet Anda!</p>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="window.print()" class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition">
+                    <i class="fa-solid fa-print mr-2"></i> Cetak Struk
+                </button>
+                <button onclick="closeReceiptModal()" class="px-5 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        document.addEventListener('click', function(e) {
+            const targetButton = e.target.closest('button, label[class*="cursor-pointer"]');
+            if (targetButton) {
+                const circle = document.createElement('span');
+                const diameter = Math.max(targetButton.clientWidth, targetButton.clientHeight);
+                const radius = diameter / 2;
+                
+                const rect = targetButton.getBoundingClientRect();
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${e.clientX - rect.left - radius}px`;
+                circle.style.top = `${e.clientY - rect.top - radius}px`;
+                circle.classList.add('ripple');
+                
+                const existingRipple = targetButton.getElementsByClassName('ripple')[0];
+                if (existingRipple) {
+                    existingRipple.remove();
+                }
+                
+                targetButton.appendChild(circle);
+            }
+        });
+
+        class BackendServer {
+            constructor() {
+                this.routes = {};
+                this.initLogger();
+            }
+
+            initLogger() {
+                console.log("[Backend Core] API Server v2.4 initialized successfully.");
+            }
+
+            // Simulasi API Endpoint Request & Response handler
+            async processRequest(endpoint, method, payload) {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        try {
+                            if (endpoint === '/api/login') {
+                                if (payload.username && payload.password) {
+                                    resolve({ status: 200, message: "Login berhasil", token: "jwt_token_" + Date.now() });
+                                } else {
+                                    reject({ status: 400, message: "Kredensial tidak valid" });
+                                }
+                            } else if (endpoint === '/api/sync') {
+                                resolve({ status: 200, message: "Sinkronisasi backend berhasil", timestamp: new Date().toISOString() });
+                            } else {
+                                resolve({ status: 200, message: "OK" });
+                            }
+                        } catch (err) {
+                            reject({ status: 500, message: err.message });
+                        }
+                    }, 300); // Simulasi latensi jaringan
+                });
+            }
+        }
+
+        const backendAPI = new BackendServer();
+
+        let currentUser = null;
+        let globalData = {
+            pelanggan: [],
+            tagihan: [],
+            keuangan: [],
+            paket: [],
+            profil: {}
+        };
+        let charts = {};
+
+        // Data lengkap lengkap pelanggan Cilakar / Perum Alwita / SMK MUSABA
+        const defaultCompletePelanggan = [
+            { id: 'PEL-1788317928217', nama: 'SMK MUSABA', wa: '081234567801', alamat: 'Karangwungu', rtrw: '001/005', paket: '50 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788317957488', nama: 'Bu Masuroh', wa: '081234567802', alamat: 'Cilakar', rtrw: '005/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318000699', nama: 'Yafi', wa: '081234567803', alamat: 'Cilakar', rtrw: '001/006', paket: '15 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318035416', nama: 'Teh Meri', wa: '081234567804', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318542536', nama: 'Ozal', wa: '081234567805', alamat: 'Cilakar', rtrw: '004/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318575215', nama: 'Faqih', wa: '081234567806', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318607833', nama: 'Pipit', wa: '081234567807', alamat: 'Cilakar', rtrw: '001/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318634991', nama: 'Hj Wasrap', wa: '081234567808', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318664205', nama: 'Aa Vian', wa: '081234567809', alamat: 'Cilakar', rtrw: '004/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318702838', nama: 'Endang', wa: '081234567810', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318745457', nama: 'Bu Haroh', wa: '081234567811', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318775465', nama: 'Mang Uloh', wa: '081234567812', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318802992', nama: 'Pa Rastam', wa: '081234567813', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318846782', nama: 'Hj Saefulloh', wa: '081234567814', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318872836', nama: 'Zaedun', wa: '081234567815', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318935367', nama: 'Rifki', wa: '081234567816', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Isolir' },
+            { id: 'PEL-1788318965305', nama: 'Bu Een', wa: '081234567817', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788318996599', nama: 'Bu Yayah', wa: '081234567818', alamat: 'Cilakar', rtrw: '004/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319032353', nama: 'Bu Marlina', wa: '081234567819', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319230968', nama: 'Euis Perum', wa: '081234567820', alamat: 'Perum Alwita', rtrw: '001/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319258342', nama: 'Mang Carto', wa: '081234567821', alamat: 'Cilakar', rtrw: '001/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319295032', nama: 'Medin', wa: '081234567822', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319329269', nama: 'Mang Musa', wa: '081234567823', alamat: 'Cilakar', rtrw: '003/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319361721', nama: 'Ardik', wa: '081234567824', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319385718', nama: 'Mita', wa: '081234567825', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319415862', nama: 'Nadiroh', wa: '081234567826', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319444230', nama: 'Agus / Kori', wa: '081234567827', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319472683', nama: 'Yuli / Bondan', wa: '081234567828', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319497350', nama: 'Rika', wa: '081234567829', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319524661', nama: 'Pa Rosi', wa: '081234567830', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319567483', nama: 'Bu Rohanah', wa: '081234567831', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319604494', nama: 'Iyus', wa: '081234567832', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319815136', nama: 'Bu indah', wa: '081234567833', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319855484', nama: 'Mang Abun', wa: '081234567834', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319881160', nama: 'Eva', wa: '081234567835', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319911531', nama: 'Bi Lia', wa: '081234567836', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319937910', nama: 'Nung', wa: '081234567837', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788319968785', nama: 'Ozi', wa: '081234567838', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320001963', nama: 'Mang Sendil', wa: '081234567839', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Isolir' },
+            { id: 'PEL-1788320032693', nama: 'Mang Saud', wa: '081234567840', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320065489', nama: 'Mang Herdi', wa: '081234567841', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320090402', nama: 'Fitri', wa: '081234567842', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320118915', nama: 'Mang Amir', wa: '081234567843', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320145222', nama: 'Ayub', wa: '081234567844', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320169840', nama: 'Ipan', wa: '081234567845', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320195678', nama: 'Bu Yayu', wa: '081234567846', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320226197', nama: 'Bu Halimah', wa: '081234567847', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320273152', nama: 'Muhammad / Kang Bubur', wa: '081234567848', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320302805', nama: 'Dela', wa: '081234567849', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320346094', nama: 'Mang Mukti', wa: '081234567850', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320372651', nama: 'Devi', wa: '081234567851', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320408082', nama: 'Heri Jurumpul', wa: '081234567852', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320437470', nama: 'Mang Puri', wa: '081234567853', alamat: 'Cilakar', rtrw: '004/006', paket: '15 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320464252', nama: 'Cahyo', wa: '081234567854', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Isolir' },
+            { id: 'PEL-1788320490720', nama: 'Mang Rohidin', wa: '081234567855', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320520033', nama: 'Inoy', wa: '081234567856', alamat: 'Cilakar', rtrw: '004/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320546103', nama: 'Tiara', wa: '081234567857', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320590309', nama: 'Dikoh', wa: '081234567858', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320617446', nama: 'Takwa', wa: '081234567859', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320652315', nama: 'Nabil', wa: '081234567860', alamat: 'Cilakar', rtrw: '002/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320677996', nama: 'Mang dede', wa: '081234567861', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320705552', nama: 'Bu Amisoh', wa: '081234567862', alamat: 'Cilakar', rtrw: '002/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320757917', nama: 'Heru', wa: '081234567863', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320798136', nama: 'Nia', wa: '081234567864', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320830329', nama: 'Rihanah', wa: '081234567865', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320865400', nama: 'Ka Imron', wa: '081234567866', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320892293', nama: 'Bu dedeh', wa: '081234567867', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320930935', nama: 'Puput', wa: '081234567868', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320957290', nama: 'Mang Mail', wa: '081234567869', alamat: 'Cilakar', rtrw: '003/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788320983888', nama: 'Tasya', wa: '081234567870', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321009707', nama: 'Bu Tri', wa: '081234567871', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321034569', nama: 'Risa', wa: '081234567872', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321067754', nama: 'Mang Miftahudin', wa: '081234567873', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321095658', nama: 'Ka Margo', wa: '081234567874', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321126335', nama: 'Riska', wa: '081234567875', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321151313', nama: 'Intan', wa: '081234567876', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321180537', nama: 'Bu Herni', wa: '081234567877', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321203866', nama: 'Mba Mey', wa: '081234567878', alamat: 'Cilakar', rtrw: '005/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321227915', nama: 'Muis', wa: '081234567879', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321261018', nama: 'Sanu', wa: '081234567880', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Isolir' },
+            { id: 'PEL-1788321287157', nama: 'Bu Sopia', wa: '081234567881', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321313324', nama: 'Teti', wa: '081234567882', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321338380', nama: 'Bu Sungati', wa: '081234567883', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321365570', nama: "Bi Ti'ah", wa: '081234567884', alamat: 'Cilakar', rtrw: '004/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321422867', nama: 'Apotek Khansa', wa: '081234567885', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321448146', nama: 'Bu Liho', wa: '081234567886', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321481340', nama: 'B Amiroh', wa: '081234567887', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321510562', nama: 'Mang Nuriman', wa: '081234567888', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321540642', nama: 'Bu Bariyah', wa: '081234567889', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321567876', nama: 'Rojikin', wa: '081234567890', alamat: 'Cilakar', rtrw: '002/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321602570', nama: 'Cica Perum', wa: '081234567891', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Isolir' },
+            { id: 'PEL-1788321841393', nama: 'Uswatun', wa: '081234567892', alamat: 'Perum Alwita', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321897245', nama: 'Bi Soliha', wa: '081234567893', alamat: 'Cilakar', rtrw: '004/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788321954846', nama: 'Mang Heri', wa: '081234567894', alamat: 'Cilakar', rtrw: '001/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322071195', nama: 'Alda', wa: '081234567895', alamat: 'Cilakar', rtrw: '004/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322099181', nama: 'Yayat', wa: '081234567896', alamat: 'Cilakar', rtrw: '003/006', paket: '5 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322295787', nama: 'Bi Nur', wa: '081234567897', alamat: 'Cilakar', rtrw: '005/006', paket: '7 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322330258', nama: 'Bu Illa', wa: '081234567898', alamat: 'Cilakar', rtrw: '003/006', paket: '10 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322354494', nama: 'SDN PBT 04', wa: '081234567899', alamat: 'Cilakar', rtrw: '003/006', paket: '15 Mbps', status: 'Aktif' },
+            { id: 'PEL-1788322376017', nama: 'Mang Ali', wa: '081234567900', alamat: 'Cilakar', rtrw: '001/006', paket: '10 Mbps', status: 'Aktif' }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const calInput = document.getElementById('calendar-generate-date');
+            if (calInput) calInput.value = today;
+            
+            const localSaved = localStorage.getItem('isp_app_data');
+            if (localSaved) {
+                try {
+                    const parsed = JSON.parse(localSaved);
+                    if (parsed && parsed.pelanggan && parsed.pelanggan.length > 0) {
+                        globalData = parsed;
+                    }
+                } catch(e) {}
+            }
+            
+            if (!globalData.pelanggan || globalData.pelanggan.length === 0) {
+                loadMockData();
+            } else {
+                renderAllModules();
+            }
+
+            loadAllData();
+        });
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const role = document.getElementById('login-role').value;
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+
+            if (!user || !pass) {
+                showErrorLogin("Username dan Password wajib diisi!");
+                return;
+            }
+
+            currentUser = { username: user, role: role };
+            document.getElementById('user-badge').innerText = role === 'admin' ? 'Administrator' : 'Petugas Lapangan';
+            document.getElementById('profile-name-display').innerText = user;
+            document.getElementById('profile-role-display').innerText = role === 'admin' ? 'Full Access' : 'Petugas Kasir';
+            document.getElementById('user-avatar-initial').innerText = user.charAt(0).toUpperCase();
+
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            
+            renderAllModules();
+        }
+
+        function showErrorLogin(msg) {
+            const errDiv = document.getElementById('login-error');
+            errDiv.innerText = msg;
+            errDiv.classList.remove('hidden');
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('bg-sky-600/20', 'text-sky-400'));
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => btn.classList.remove('text-sky-400'));
+            
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-sky-600/20', 'text-sky-400');
+            }
+            
+            // Highlight mobile nav
+            const activeMobileBtn = document.querySelector(`nav.fixed [data-tab="${tabName}"]`);
+            if (activeMobileBtn) {
+                activeMobileBtn.classList.add('text-sky-400');
+            }
+
+            const titles = {
+                dashboard: 'Dashboard Utama',
+                pelanggan: 'Manajemen Pelanggan ISP',
+                tagihan: 'Manajemen Tagihan Bulanan',
+                keuangan: 'Manajemen Keuangan Kas',
+                paket: 'Manajemen Paket Layanan',
+                profil: 'Profil Perusahaan & Pembayaran'
+            };
+            document.getElementById('current-page-title').innerText = titles[tabName] || 'Portal ISP';
+        }
+
+        function showLoading(show) {
+            const loader = document.getElementById('loading-overlay');
+            if (loader) {
+                if (show) loader.classList.remove('hidden');
+                else loader.classList.add('hidden');
+            }
+        }
+
+        function loadAllData() {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                showLoading(true);
+                google.script.run
+                    .withSuccessHandler(function(data) {
+                        if (data && data.pelanggan && data.pelanggan.length > 0) {
+                            globalData.pelanggan = data.pelanggan || globalData.pelanggan;
+                            globalData.tagihan = data.tagihan || globalData.tagihan;
+                            globalData.keuangan = data.keuangan || globalData.keuangan;
+                            globalData.paket = data.paket || globalData.paket;
+                            globalData.profil = data.profil || globalData.profil;
+                            saveLocalPersistence();
+                        }
+                        renderAllModules();
+                        showLoading(false);
+                    })
+                    .withFailureHandler(function(err) {
+                        renderAllModules();
+                        showLoading(false);
+                    })
+                    .getAllAppData();
+            } else {
+                renderAllModules();
+            }
+        }
+
+        function saveLocalPersistence() {
+            try {
+                localStorage.setItem('isp_app_data', JSON.stringify(globalData));
+            } catch(e) {}
+        }
+
+        function loadMockData() {
+            const localSaved = localStorage.getItem('isp_app_data');
+            if (localSaved) {
+                try {
+                    const parsed = JSON.parse(localSaved);
+                    if (parsed && parsed.pelanggan && parsed.pelanggan.length > 0) {
+                        globalData = parsed;
+                        renderAllModules();
+                        return;
+                    }
+                } catch(e) {}
+            }
+
+            globalData = {
+                pelanggan: defaultCompletePelanggan,
+                tagihan: [
+                    { id: 'TAG-001', pelanggan: 'SMK MUSABA', periode: 'Oktober 2026', nominal: 500000, status: 'Lunas' },
+                    
+                ],
+                keuangan: [
+                    { id: 'KEU-001', tanggal: '2026-10-01', keterangan: 'Pembayaran tagihan SMK MUSABA', kategori: 'Langganan', jenis: 'Pemasukan', nominal: 500000 },
+                    { id: 'KEU-002', tanggal: '2026-10-02', keterangan: 'Pembelian kabel fiber optik', kategori: 'Operasional', jenis: 'Pengeluaran', nominal: 75000 }
+                ],
+                paket: [
+                    { id: 'PKT-001', nama: '5 Mbps', kecepatan: '5 Mbps', harga: 100000 },
+                    { id: 'PKT-002', nama: '7 Mbps', kecepatan: '7 Mbps', harga: 125000 },
+                    { id: 'PKT-003', nama: '10 Mbps', kecepatan: '10 Mbps', harga: 150000 },
+                    { id: 'PKT-004', nama: '15 Mbps', kecepatan: '15 Mbps', harga: 200000 },
+                    { id: 'PKT-005', nama: '50 Mbps', kecepatan: '50 Mbps', harga: 500000 }
+                ],
+                profil: {
+                    nama: 'ISP Nusantara Mandiri',
+                    telp: '021-555888',
+                    alamat: 'Jl. Raya Digital No. 99, Jakarta',
+                    metode: ['BRI', 'MANDIRI', 'DANA', 'OVO']
+                }
+            };
+            saveLocalPersistence();
+            renderAllModules();
+        }
+
+        function renderAllModules() {
+            renderDashboard();
+            renderPelangganTable();
+            renderTagihanTable();
+            renderKeuanganTable();
+            renderPaketCards();
+            renderProfilPerusahaan();
+            populateDropdowns();
+        }
+
+        function renderDashboard() {
+            const totalPelanggan = globalData.pelanggan.length;
+            const lunas = globalData.tagihan.filter(t => t.status === 'Lunas').length;
+            const pendingList = globalData.tagihan.filter(t => t.status === 'Belum Bayar');
+            const pending = pendingList.length;
+            const totalNominalPending = pendingList.reduce((acc, curr) => acc + Number(curr.nominal), 0);
+            
+            let totalMasuk = globalData.keuangan.filter(k => k.jenis === 'Pemasukan').reduce((a, b) => a + Number(b.nominal), 0);
+            let totalKeluar = globalData.keuangan.filter(k => k.jenis === 'Pengeluaran').reduce((a, b) => a + Number(b.nominal), 0);
+            let saldo = totalMasuk - totalKeluar;
+
+            document.getElementById('stat-total-pelanggan').innerText = totalPelanggan;
+            document.getElementById('stat-tagihan-lunas').innerText = lunas;
+            document.getElementById('stat-tagihan-pending').innerText = pending;
+            document.getElementById('stat-nominal-pending').innerText = formatRupiah(totalNominalPending);
+            document.getElementById('stat-saldo-kas').innerText = formatRupiah(saldo);
+
+            const ctxFinance = document.getElementById('financeChart').getContext('2d');
+            if (charts.finance) charts.finance.destroy();
+            charts.finance = new Chart(ctxFinance, {
+                type: 'bar',
+                data: {
+                    labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+                    datasets: [
+                        { label: 'Pemasukan', data: [totalMasuk * 0.3, totalMasuk * 0.4, totalMasuk * 0.2, totalMasuk * 0.1], backgroundColor: '#0284c7', borderRadius: 8 },
+                        { label: 'Pengeluaran', data: [totalKeluar * 0.4, totalKeluar * 0.2, totalKeluar * 0.3, totalKeluar * 0.1], backgroundColor: '#06b6d4', borderRadius: 8 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1500 } }
+            });
+
+            const ctxPackage = document.getElementById('packageChart').getContext('2d');
+            if (charts.package) charts.package.destroy();
+            charts.package = new Chart(ctxPackage, {
+                type: 'doughnut',
+                data: {
+                    labels: globalData.paket.map(p => p.nama),
+                    datasets: [{
+                        data: globalData.paket.map(p => globalData.pelanggan.filter(el => el.paket === p.nama).length || 1),
+                        backgroundColor: ['#0284c7', '#06b6d4', '#38bdf8', '#7dd3fc', '#0284c7']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true } }
+            });
+        }
+
+        function renderPelangganTable() {
+            const tbody = document.getElementById('table-pelanggan-body');
+            tbody.innerHTML = '';
+            globalData.pelanggan.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-sky-50/50 transition">
+                        <td class="p-4 font-bold text-slate-800">${p.nama} <br><span class="text-xs font-normal text-slate-400">${p.id}</span></td>
+                        <td class="p-4 text-slate-600">${p.wa}</td>
+                        <td class="p-4 text-slate-600">${p.alamat} <br><span class="text-xs text-sky-600 font-semibold">${p.rtrw}</span></td>
+                        <td class="p-4"><span class="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-xs font-bold">${p.paket}</span></td>
+                        <td class="p-4"><span class="px-3 py-1 ${p.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} rounded-full text-xs font-bold">${p.status}</span></td>
+                        <td class="p-4 text-center space-x-2">
+                            <button onclick="editPelanggan('${p.id}')" class="p-2 bg-amber-500/10 text-amber-600 rounded-xl hover:bg-amber-500/20 transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deletePelanggan('${p.id}')" class="p-2 bg-red-500/10 text-red-600 rounded-xl hover:bg-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openPelangganModal() {
+            document.getElementById('pelanggan-form').reset();
+            document.getElementById('pel-id').value = '';
+            document.getElementById('pelanggan-modal-title').innerText = 'Tambah Pelanggan Baru';
+            document.getElementById('pelanggan-modal').classList.remove('hidden');
+        }
+
+        function closePelangganModal() {
+            document.getElementById('pelanggan-modal').classList.add('hidden');
+        }
+
+        function submitPelanggan(e) {
+            e.preventDefault();
+            const id = document.getElementById('pel-id').value || 'PEL-' + Date.now();
+            const newPel = {
+                id: id,
+                nama: document.getElementById('pel-nama').value,
+                wa: document.getElementById('pel-wa').value,
+                alamat: document.getElementById('pel-alamat').value,
+                rtrw: document.getElementById('pel-rtrw').value,
+                paket: document.getElementById('pel-paket').value,
+                status: document.getElementById('pel-status').value
+            };
+
+            const index = globalData.pelanggan.findIndex(p => p.id === id);
+            if (index >= 0) globalData.pelanggan[index] = newPel;
+            else globalData.pelanggan.unshift(newPel);
+
+            saveLocalPersistence();
+            syncBackend('savePelanggan', newPel);
+            closePelangganModal();
+            renderAllModules();
+        }
+
+        function editPelanggan(id) {
+            const p = globalData.pelanggan.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('pel-id').value = p.id;
+            document.getElementById('pel-nama').value = p.nama;
+            document.getElementById('pel-wa').value = p.wa;
+            document.getElementById('pel-alamat').value = p.alamat;
+            document.getElementById('pel-rtrw').value = p.rtrw;
+            document.getElementById('pel-paket').value = p.paket;
+            document.getElementById('pel-status').value = p.status;
+            document.getElementById('pelanggan-modal-title').innerText = 'Edit Pelanggan';
+            document.getElementById('pelanggan-modal').classList.remove('hidden');
+        }
+
+        function deletePelanggan(id) {
+            if (confirm('Hapus pelanggan ini?')) {
+                globalData.pelanggan = globalData.pelanggan.filter(p => p.id !== id);
+                saveLocalPersistence();
+                syncBackend('deletePelanggan', { id });
+                renderAllModules();
+            }
+        }
+
+        function exportExcelPelanggan() {
+            let csv = 'ID,Nama,WhatsApp,Alamat,RT/RW,Paket,Status\n';
+            globalData.pelanggan.forEach(p => {
+                csv += `"${p.id}","${p.nama}","${p.wa}","${p.alamat}","${p.rtrw}","${p.paket}","${p.status}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Data_Pelanggan_ISP.csv');
+            a.click();
+        }
+
+        function importExcelPelanggan(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n');
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 6) {
+                        const newPel = {
+                            id: cols[0].replace(/"/g, ''),
+                            nama: cols[1].replace(/"/g, ''),
+                            wa: cols[2].replace(/"/g, ''),
+                            alamat: cols[3].replace(/"/g, ''),
+                            rtrw: cols[4].replace(/"/g, ''),
+                            paket: cols[5].replace(/"/g, ''),
+                            status: cols[6] ? cols[6].replace(/"/g, '').trim() : 'Aktif'
+                        };
+                        globalData.pelanggan.push(newPel);
+                        syncBackend('savePelanggan', newPel);
+                    }
+                }
+                saveLocalPersistence();
+                renderAllModules();
+                alert('Import data pelanggan berhasil!');
+            };
+            reader.readAsText(file);
+        }
+
+        function renderTagihanTable() {
+            const tbody = document.getElementById('table-tagihan-body');
+            tbody.innerHTML = '';
+            globalData.tagihan.forEach(t => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-sky-50/50 transition">
+                        <td class="p-4 font-bold text-slate-800">${t.id} <br><span class="text-xs font-normal text-slate-400">${t.pelanggan}</span></td>
+                        <td class="p-4 text-slate-600">${t.periode}</td>
+                        <td class="p-4 font-bold text-sky-700">${formatRupiah(t.nominal)}</td>
+                        <td class="p-4"><span class="px-3 py-1 ${t.status === 'Lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} rounded-full text-xs font-bold">${t.status}</span></td>
+                        <td class="p-4 text-center space-x-2">
+                            <button onclick="kirimWhatsApp('${t.id}')" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl hover:bg-emerald-500/20 transition text-xs font-bold"><i class="fa-brands fa-whatsapp mr-1"></i> WA</button>
+                            <button onclick="bayarTagihan('${t.id}')" class="px-3 py-1.5 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition text-xs font-bold shadow-md"><i class="fa-solid fa-check mr-1"></i> Bayar / Struk</button>
+                            <button onclick="deleteTagihan('${t.id}')" class="p-2 bg-red-500/10 text-red-600 rounded-xl hover:bg-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openTagihanModal() {
+            document.getElementById('tagihan-form').reset();
+            document.getElementById('tagihan-modal').classList.remove('hidden');
+        }
+
+        function closeTagihanModal() {
+            document.getElementById('tagihan-modal').classList.add('hidden');
+        }
+
+        function submitTagihan(e) {
+            e.preventDefault();
+            const newTag = {
+                id: 'TAG-' + Date.now(),
+                pelanggan: document.getElementById('tag-pelanggan').value,
+                periode: document.getElementById('tag-periode').value,
+                nominal: Number(document.getElementById('tag-nominal').value),
+                status: 'Belum Bayar'
+            };
+            globalData.tagihan.push(newTag);
+            saveLocalPersistence();
+            syncBackend('saveTagihan', newTag);
+            closeTagihanModal();
+            renderAllModules();
+        }
+
+        function generateMassalTagihan() {
+            const calendarInput = document.getElementById('calendar-generate-date').value;
+            if (!calendarInput) {
+                alert('Silakan pilih tanggal pada kalender terlebih dahulu!');
+                return;
+            }
+
+            if (!globalData.pelanggan || globalData.pelanggan.length === 0) {
+                alert('Data pelanggan masih kosong.');
+                return;
+            }
+
+            const dateObj = new Date(calendarInput);
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const periodeFormatted = dateObj.toLocaleDateString('id-ID', options);
+
+            let generatedCount = 0;
+
+            globalData.pelanggan.forEach(p => {
+                const pkt = globalData.paket.find(x => x.nama === p.paket);
+                const harga = pkt ? pkt.harga : 150000;
+                
+                const existing = globalData.tagihan.find(t => t.pelanggan === p.nama && t.periode === periodeFormatted);
+                if (!existing) {
+                    const newTag = {
+                        id: 'TAG-' + Math.floor(Math.random() * 90000 + 10000),
+                        pelanggan: p.nama,
+                        periode: periodeFormatted,
+                        nominal: harga,
+                        status: 'Belum Bayar'
+                    };
+                    globalData.tagihan.push(newTag);
+                    syncBackend('saveTagihan', newTag);
+                    generatedCount++;
+                }
+            });
+
+            saveLocalPersistence();
+            renderAllModules();
+            alert(`Berhasil generate tagihan untuk tanggal ${periodeFormatted}! Total ${generatedCount} tagihan baru ditambahkan.`);
+        }
+
+        function kirimWhatsApp(id) {
+            const t = globalData.tagihan.find(item => item.id === id);
+            const p = globalData.pelanggan.find(item => item.nama === t.pelanggan);
+            const phone = p ? p.wa : '628123456789';
+            const msg = `Halo ${t.pelanggan}, tagihan internet Anda untuk periode ${t.periode} sebesar ${formatRupiah(t.nominal)} belum dibayar. Mohon segera lakukan pembayaran. Terima kasih.`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function bayarTagihan(id) {
+            const t = globalData.tagihan.find(item => item.id === id);
+            if (t) {
+                t.status = 'Lunas';
+                saveLocalPersistence();
+                syncBackend('saveTagihan', t);
+                const newKeu = {
+                    id: 'KEU-' + Date.now(),
+                    tanggal: new Date().toISOString().split('T')[0],
+                    keterangan: `Pembayaran tagihan ${t.pelanggan} (${t.periode})`,
+                    kategori: 'Langganan',
+                    jenis: 'Pemasukan',
+                    nominal: t.nominal
+                };
+                globalData.keuangan.push(newKeu);
+                saveLocalPersistence();
+                syncBackend('saveKeuangan', newKeu);
+                renderAllModules();
+                
+                document.getElementById('rcpt-id').innerText = t.id;
+                document.getElementById('rcpt-date').innerText = new Date().toLocaleDateString();
+                document.getElementById('rcpt-nama').innerText = t.pelanggan;
+                document.getElementById('rcpt-periode').innerText = t.periode;
+                document.getElementById('rcpt-total').innerText = formatRupiah(t.nominal);
+                document.getElementById('rcpt-isp-name').innerText = globalData.profil.nama || 'ISP NET MANAGER';
+                document.getElementById('rcpt-isp-address').innerText = globalData.profil.alamat || '';
+                document.getElementById('receipt-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        function deleteTagihan(id) {
+            globalData.tagihan = globalData.tagihan.filter(t => t.id !== id);
+            saveLocalPersistence();
+            syncBackend('deleteTagihan', { id });
+            renderAllModules();
+        }
+
+        function renderKeuanganTable() {
+            const tbody = document.getElementById('table-keuangan-body');
+            tbody.innerHTML = '';
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            globalData.keuangan.forEach(k => {
+                if (k.jenis === 'Pemasukan') totalMasuk += Number(k.nominal);
+                else totalKeluar += Number(k.nominal);
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-sky-50/50 transition">
+                        <td class="p-4 text-slate-600">${k.tanggal}</td>
+                        <td class="p-4 font-bold text-slate-800">${k.keterangan}</td>
+                        <td class="p-4"><span class="px-3 py-1 bg-sky-100 text-sky-800 rounded-full text-xs font-bold">${k.kategori}</span></td>
+                        <td class="p-4"><span class="px-3 py-1 ${k.jenis === 'Pemasukan' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} rounded-full text-xs font-bold">${k.jenis}</span></td>
+                        <td class="p-4 font-bold ${k.jenis === 'Pemasukan' ? 'text-emerald-600' : 'text-red-600'}">${formatRupiah(k.nominal)}</td>
+                        <td class="p-4 text-center">
+                            <button onclick="deleteKeuangan('${k.id}')" class="p-2 bg-red-500/10 text-red-600 rounded-xl hover:bg-red-500/20 transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('keuangan-total-masuk').innerText = formatRupiah(totalMasuk);
+            document.getElementById('keuangan-total-keluar').innerText = formatRupiah(totalKeluar);
+            document.getElementById('keuangan-saldo-bersih').innerText = formatRupiah(totalMasuk - totalKeluar);
+        }
+
+        function openKeuanganModal() {
+            document.getElementById('keuangan-form').reset();
+            document.getElementById('keuangan-modal').classList.remove('hidden');
+        }
+
+        function closeKeuanganModal() {
+            document.getElementById('keuangan-modal').classList.add('hidden');
+        }
+
+        function submitKeuangan(e) {
+            e.preventDefault();
+            const newKeu = {
+                id: 'KEU-' + Date.now(),
+                tanggal: new Date().toISOString().split('T')[0],
+                keterangan: document.getElementById('keu-ket').value,
+                kategori: document.getElementById('keu-kat').value,
+                jenis: document.getElementById('keu-jenis').value,
+                nominal: Number(document.getElementById('keu-nom').value)
+            };
+            globalData.keuangan.push(newKeu);
+            saveLocalPersistence();
+            syncBackend('saveKeuangan', newKeu);
+            closeKeuanganModal();
+            renderAllModules();
+        }
+
+        function deleteKeuangan(id) {
+            globalData.keuangan = globalData.keuangan.filter(k => k.id !== id);
+            saveLocalPersistence();
+            syncBackend('deleteKeuangan', { id });
+            renderAllModules();
+        }
+
+        function printLaporanKeuangan() {
+            window.print();
+        }
+
+        function renderPaketCards() {
+            const container = document.getElementById('paket-cards-container');
+            container.innerHTML = '';
+            globalData.paket.forEach(p => {
+                container.innerHTML += `
+                    <div class="bg-white/90 backdrop-blur rounded-3xl p-6 border border-sky-200 shadow-xl rgb-card space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs px-3 py-1 bg-sky-100 text-sky-800 font-bold rounded-full">${p.kecepatan}</span>
+                                <h4 class="text-xl font-black text-slate-800 mt-2">${p.nama}</h4>
+                            </div>
+                            <div class="w-12 h-12 bg-sky-500/10 text-sky-600 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                                <i class="fa-solid fa-wifi"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-sky-700">${formatRupiah(p.harga)} <span class="text-xs font-normal text-slate-400">/bulan</span></div>
+                        <div class="flex space-x-2 pt-2 border-t border-slate-100">
+                            <button onclick="editPaket('${p.id}')" class="flex-1 py-2 bg-amber-500/10 text-amber-600 rounded-xl font-bold hover:bg-amber-500/20 transition text-xs"><i class="fa-solid fa-pen mr-1"></i> Edit</button>
+                            <button onclick="deletePaket('${p.id}')" class="flex-1 py-2 bg-red-500/10 text-red-600 rounded-xl font-bold hover:bg-red-500/20 transition text-xs"><i class="fa-solid fa-trash mr-1"></i> Hapus</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openPaketModal() {
+            document.getElementById('paket-form').reset();
+            document.getElementById('pkt-id').value = '';
+            document.getElementById('paket-modal').classList.remove('hidden');
+        }
+
+        function closePaketModal() {
+            document.getElementById('paket-modal').classList.add('hidden');
+        }
+
+        function submitPaket(e) {
+            e.preventDefault();
+            const id = document.getElementById('pkt-id').value || 'PKT-' + Date.now();
+            const pkt = {
+                id: id,
+                nama: document.getElementById('pkt-nama').value,
+                kecepatan: document.getElementById('pkt-kecepatan').value,
+                harga: Number(document.getElementById('pkt-harga').value)
+            };
+            const idx = globalData.paket.findIndex(p => p.id === id);
+            if (idx >= 0) globalData.paket[idx] = pkt;
+            else globalData.paket.push(pkt);
+            saveLocalPersistence();
+            syncBackend('savePaket', pkt);
+            closePaketModal();
+            renderAllModules();
+        }
+
+        function editPaket(id) {
+            const p = globalData.paket.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('pkt-id').value = p.id;
+            document.getElementById('pkt-nama').value = p.nama;
+            document.getElementById('pkt-kecepatan').value = p.kecepatan;
+            document.getElementById('pkt-harga').value = p.harga;
+            document.getElementById('paket-modal').classList.remove('hidden');
+        }
+
+        function deletePaket(id) {
+            globalData.paket = globalData.paket.filter(p => p.id !== id);
+            saveLocalPersistence();
+            syncBackend('deletePaket', { id });
+            renderAllModules();
+        }
+
+        function renderProfilPerusahaan() {
+            document.getElementById('prof-nama').value = globalData.profil.nama || '';
+            document.getElementById('prof-telp').value = globalData.profil.telp || '';
+            document.getElementById('prof-alamat').value = globalData.profil.alamat || '';
+            
+            const checks = document.querySelectorAll('input[name="metode-bayar"]');
+            checks.forEach(chk => {
+                if (globalData.profil.metode && globalData.profil.metode.includes(chk.value)) {
+                    chk.checked = true;
+                }
+            });
+        }
+
+        function saveProfilPerusahaan() {
+            globalData.profil.nama = document.getElementById('prof-nama').value;
+            globalData.profil.telp = document.getElementById('prof-telp').value;
+            globalData.profil.alamat = document.getElementById('prof-alamat').value;
+            
+            const selectedMetode = [];
+            document.querySelectorAll('input[name="metode-bayar"]:checked').forEach(chk => {
+                selectedMetode.push(chk.value);
+            });
+            globalData.profil.metode = selectedMetode;
+            saveLocalPersistence();
+            syncBackend('saveProfil', globalData.profil);
+            alert('Profil perusahaan dan metode pembayaran berhasil disimpan!');
+        }
+
+        function populateDropdowns() {
+            const pelSelect = document.getElementById('tag-pelanggan');
+            if (pelSelect) {
+                pelSelect.innerHTML = '';
+                globalData.pelanggan.forEach(p => {
+                    pelSelect.innerHTML += `<option value="${p.nama}">${p.nama} (${p.paket})</option>`;
+                });
+            }
+
+            const pktSelect = document.getElementById('pel-paket');
+            if (pktSelect) {
+                pktSelect.innerHTML = '';
+                globalData.paket.forEach(p => {
+                    pktSelect.innerHTML += `<option value="${p.nama}">${p.nama} - ${formatRupiah(p.harga)}</option>`;
+                });
+            }
+        }
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        function filterPelanggan() {
+            const q = document.getElementById('search-pelanggan').value.toLowerCase();
+            const rows = document.querySelectorAll('#table-pelanggan-body tr');
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function filterTagihan() {
+            const q = document.getElementById('search-tagihan').value.toLowerCase();
+            const rows = document.querySelectorAll('#table-tagihan-body tr');
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function syncBackend(action, data) {
+            backendAPI.processRequest('/api/sync', 'POST', { action, data }).then(res => {
+                console.log(`[Backend API] Action '${action}' processed at ${res.timestamp}`);
+            }).catch(err => {
+                console.error(`[Backend API Error]`, err);
+            });
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.syncDataToSheet(action, data);
+            }
+        }
+    </script>
+</body>
+</html>
